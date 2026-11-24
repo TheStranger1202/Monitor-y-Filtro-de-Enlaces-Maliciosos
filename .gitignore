@@ -1,0 +1,21 @@
+# Entornos virtuales
+.venv/
+venv/
+env/
+
+# Archivos de configuración sensible
+.env
+
+# Caché de Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Bases de datos locales SQLite
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs y archivos temporales
+*.log
+.DS_Store
