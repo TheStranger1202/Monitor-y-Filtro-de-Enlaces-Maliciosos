@@ -1,5 +1,6 @@
 """
-Script funcional de actualización de Inteligencia de Amenazas Local (URLhaus CSV).
+Script funcional de actualización de Inteligencia de Amenazas Local (OpenPhish / URLhaus).
+Soporta automáticamente feeds en texto plano (1 URL por línea) y formato CSV.
 Protegido contra Stream Bombs (EC-EXT-04), SSRF de esquema no HTTPS y filas corruptas.
 """
 
@@ -47,11 +48,38 @@ def download_feed_bounded(
     return b"".join(chunks).decode("utf-8", errors="replace")
 
 
+def parse_plain_text_feed(
+    raw_text: str, source: str = "openphish", max_entries: int = 25000
+) -> tuple[tuple[str, str, str, str], ...]:
+    """
+    Función pura que parsea feeds en texto plano (1 URL por línea, ej. OpenPhish)
+    devolviendo tuplas `(url, domain, 'phishing', source)`.
+    """
+    if not raw_text:
+        return ()
+
+    entries: list[tuple[str, str, str, str]] = []
+    for line in io.StringIO(raw_text):
+        candidate_url = line.strip()[:2048]
+        if not candidate_url or candidate_url.startswith("#"):
+            continue
+        if not candidate_url.lower().startswith(("http://", "https://")):
+            continue
+        domain = extract_domain_safe(candidate_url)
+        if not domain or domain.endswith(".invalid"):
+            continue
+        entries.append((candidate_url, domain, "phishing", source))
+        if len(entries) >= max_entries:
+            break
+
+    return tuple(entries)
+
+
 def parse_urlhaus_csv(
     raw_csv_text: str, max_entries: int = 25000
 ) -> tuple[tuple[str, str, str, str], ...]:
     """
-    Función pura que parsea el CSV público de URLhaus ignorando comentarios `#`
+    Función pura que parsea el formato CSV de URLhaus ignorando comentarios `#`
     y extrayendo tuplas `(url, domain, threat_type, 'urlhaus')`.
     """
     if not raw_csv_text:
@@ -64,7 +92,6 @@ def parse_urlhaus_csv(
     entries: list[tuple[str, str, str, str]] = []
 
     for row in reader:
-        # Formato estándar URLhaus csv_online: id,dateadded,url,url_status,last_online,threat,tags,urlhaus_link,reporter
         if len(row) < 6:
             continue
         candidate_url = row[2].strip()[:2048]
@@ -81,15 +108,36 @@ def parse_urlhaus_csv(
     return tuple(entries)
 
 
+def parse_threat_feed_auto(
+    raw_text: str, max_entries: int = 25000
+) -> tuple[tuple[str, str, str, str], ...]:
+    """
+    Función pura que detecta automáticamente si el feed es texto plano (OpenPhish)
+    o CSV estructurado (URLhaus).
+    """
+    if not raw_text:
+        return ()
+
+    for line in io.StringIO(raw_text):
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        if stripped.lower().startswith(("http://", "https://")) and "," not in stripped:
+            return parse_plain_text_feed(raw_text, source="openphish", max_entries=max_entries)
+        return parse_urlhaus_csv(raw_text, max_entries=max_entries)
+
+    return ()
+
+
 def sync_urlhaus_feed(
     db_path: str,
     feed_url: str,
     downloader_fn: Callable[[str], str] = download_feed_bounded,
 ) -> int:
-    """Descarga, parsea e inserta en lote las amenazas dentro de SQLite."""
+    """Descarga, parsea automáticamente e inserta en lote las amenazas dentro de SQLite."""
     init_database(db_path)
-    raw_csv = downloader_fn(feed_url)
-    parsed_entries = parse_urlhaus_csv(raw_csv)
+    raw_content = downloader_fn(feed_url)
+    parsed_entries = parse_threat_feed_auto(raw_content)
     if not parsed_entries:
         return 0
 
@@ -103,9 +151,9 @@ def main() -> None:
     cfg = get_config()
     try:
         inserted = sync_urlhaus_feed(cfg.database_path, cfg.urlhaus_feed_url)
-        logger.info("Feed URLhaus sincronizado correctamente. Nuevos indicadores: %d", inserted)
+        logger.info("Feed de amenazas sincronizado correctamente. Nuevos indicadores: %d", inserted)
     except Exception as exc:
-        logger.error("Error al sincronizar feed URLhaus: %s", sanitize_for_log(str(exc)))
+        logger.error("Error al sincronizar feed de amenazas: %s", sanitize_for_log(str(exc)))
         raise SystemExit(1) from exc
 
 

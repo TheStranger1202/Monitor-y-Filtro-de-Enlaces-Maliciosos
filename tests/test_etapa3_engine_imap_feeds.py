@@ -270,3 +270,17 @@ def test_ec_ext_04_urlhaus_feed_parser_and_https_enforcement(tmp_path: Path) -> 
         downloader_fn=lambda _url: sample_csv,
     )
     assert inserted == 1
+def test_openphish_plain_text_feed_sync(tmp_path: Path) -> None:
+    """Comprueba la autodetección y carga de feeds en texto plano (OpenPhish)."""
+    sample_openphish = (
+        "https://phishing-naviera-test.example.com/login\n"
+        "http://falso-seniat-pagos.net/aranceles\n"
+        "javascript:alert(1)\n"
+    )
+    db_file = str(tmp_path / "openphish.db")
+    inserted = sync_urlhaus_feed(
+        db_path=db_file,
+        feed_url="https://openphish.com/feed.txt",
+        downloader_fn=lambda _url: sample_openphish,
+    )
+    assert inserted == 2

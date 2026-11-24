@@ -121,7 +121,7 @@ def build_config_from_mapping(env_map: Mapping[str, str]) -> AppConfig:
         virustotal_api_key=make_secret(env_map.get("VIRUSTOTAL_API_KEY", "")),
         vt_rate_limit_seconds=vt_rate_limit,
         urlhaus_feed_url=env_map.get(
-            "URLHAUS_FEED_URL", "https://urlhaus.abuse.ch/downloads/csv_online/"
+            "URLHAUS_FEED_URL", "https://openphish.com/feed.txt"
         ).strip(),
         database_path=normalize_db_path(env_map.get("DATABASE_URL", "sqlite:///./phishguard.db")),
         risk_threshold_suspicious=suspicious_threshold,

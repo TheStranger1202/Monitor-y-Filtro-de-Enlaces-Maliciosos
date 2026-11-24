@@ -37,5 +37,5 @@ Este documento respalda la implementación funcional (100% libre de POO) de las 
 * **TLS Estricto:** Conexión exclusiva mediante `imaplib.IMAP4_SSL` con `ssl.create_default_context()` (rechaza certificados autofirmados o caducados).
 * **Cuarentena Atómica Segura (`EC-IMAP-02`):** Verifica/crea la carpeta `Cuarentena` antes de ejecutar `UID COPY` + marcado `\Deleted` + `EXPUNGE` únicamente si la copia al buzón de aislamiento respondió `OK` (garantizando cero pérdida de correos).
 
-### 2.4 `scripts/update_feeds.py` (Ingesta Segura de Inteligencia URLhaus)
+### 2.4 `scripts/update_feeds.py` (Ingesta Segura de Inteligencia OpenPhish / URLhaus)
 * **Anti-Stream Bomb (`EC-EXT-04`):** Descarga en *streaming* por fragmentos (`iter_bytes`) abortando inmediatamente si el flujo supera `max_bytes` (por defecto 15 MB) y exigiendo esquema `https://`.
