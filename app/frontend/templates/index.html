@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PHISHGUARD // Consolas de Defensa IMAP </title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <!-- Barra Lateral Táctica -->
+    <aside class="sidebar" aria-label="Navegación principal">
+      <div class="brand-box">
+        <!-- Sigilo geométrico gótico-cyberpunk SVG propio -->
+        <svg class="sigil-logo" viewBox="0 0 64 64" width="42" height="42" aria-hidden="true">
+          <polygon points="32,3 61,19 61,45 32,61 3,45 3,19" fill="none" stroke="currentColor" stroke-width="2" />
+          <polygon points="32,8 53,48 11,48" fill="none" stroke="#e11d48" stroke-width="1.6" />
+          <circle cx="32" cy="34" r="7" fill="none" stroke="#8b5cf6" stroke-width="1.8" />
+          <circle cx="32" cy="34" r="2.2" fill="#e11d48" />
+        </svg>
+        <div class="brand-meta">
+          <span class="brand-title">PHISHGUARD</span>
+          <span class="brand-sub">CHACAO // CUSTOMS SOC</span>
+        </div>
+      </div>
+
+      <nav class="nav-menu">
+        <button type="button" class="nav-btn active" data-view="overview">
+          <span class="nav-glyph">◈</span>
+          <span>Panel de Mando</span>
+        </button>
+        <button type="button" class="nav-btn" data-view="forensics">
+          <span class="nav-glyph">☠</span>
+          <span>Bitácora Forense</span>
+          <span id="nav-quarantine-badge" class="nav-badge">0</span>
+        </button>
+        <button type="button" class="nav-btn" data-view="oracle">
+          <span class="nav-glyph">⚚</span>
+          <span>Oráculo de URLs</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="daemon-card">
+          <div class="daemon-row">
+            <span id="daemon-dot" class="status-dot"></span>
+            <span id="daemon-status-text" class="daemon-label">Sondeando núcleo...</span>
+          </div>
+          <span class="daemon-hint">Motor Híbrido 3 Capas // IMAP TLS</span>
+        </div>
+
+        <div class="signature-box">
+          <span class="sig-tag">OPEN-SOURCE DEFENSE</span>
+          <strong class="sig-author">PHISHGUARD CHACAO</strong>
+          <span class="sig-license">MIT Open-Source // v{{ version }}</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Área Principal -->
+    <main class="main-workspace">
+      <header class="topbar">
+        <div>
+          <h1 id="view-heading" class="page-title">Panel de Mando</h1>
+          <p id="view-subtitle" class="page-subtitle">
+            Telemetría preventiva en tiempo real para correo institucional de comercio exterior
+          </p>
+        </div>
+        <div class="topbar-actions">
+          <span id="last-sync-label" class="sync-timestamp">Sincronizado: --:--:--</span>
+          <button type="button" id="btn-refresh-all" class="btn btn-ghost">
+            ↻ Sincronizar
+          </button>
+        </div>
+      </header>
+
+      <!-- VISTA 1: PANEL DE MANDO -->
+      <section id="view-overview" class="view-section active">
+        <div class="kpi-grid">
+          <article class="kpi-card">
+            <span class="kpi-label">CORREOS ANALIZADOS</span>
+            <strong id="kpi-total" class="kpi-value">0</strong>
+            <span class="kpi-foot">Total procesados vía IMAP</span>
+          </article>
+
+          <article class="kpi-card kpi-crimson">
+            <span class="kpi-label">AISLADOS EN CUARENTENA</span>
+            <strong id="kpi-quarantined" class="kpi-value">0</strong>
+            <span class="kpi-foot">Amenazas neutralizadas (≥ 60 pts)</span>
+          </article>
+
+          <article class="kpi-card kpi-amber">
+            <span class="kpi-label">ENLACES MALICIOSOS</span>
+            <strong id="kpi-malicious-urls" class="kpi-value">0</strong>
+            <span class="kpi-foot">Firmas y heurística aduanera</span>
+          </article>
+
+          <article class="kpi-card kpi-emerald">
+            <span class="kpi-label">TRÁFICO LIMPIO</span>
+            <strong id="kpi-clean" class="kpi-value">0</strong>
+            <span class="kpi-foot">Verificados sin riesgo</span>
+          </article>
+        </div>
+
+        <div class="panel-card">
+          <div class="panel-header">
+            <div>
+              <h2>Últimas Intercepciones</h2>
+              <p class="panel-desc">Vista rápida de los últimos 6 mensajes evaluados. Haz clic para autopsia.</p>
+            </div>
+            <button type="button" class="btn btn-outline" data-jump-view="forensics">
+              Ver bitácora completa →
+            </button>
+          </div>
+
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Estado</th>
+                  <th>Riesgo</th>
+                  <th>Remitente</th>
+                  <th>Asunto</th>
+                  <th>Procesado (UTC)</th>
+                </tr>
+              </thead>
+              <tbody id="overview-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- VISTA 2: BITÁCORA FORENSE -->
+      <section id="view-forensics" class="view-section">
+        <div class="panel-card">
+          <div class="toolbar">
+            <div class="filter-pills" role="group" aria-label="Filtrar por estado">
+              <button type="button" class="pill active" data-filter="ALL">Todos</button>
+              <button type="button" class="pill pill-crimson" data-filter="QUARANTINED">Cuarentena</button>
+              <button type="button" class="pill pill-amber" data-filter="SUSPICIOUS">Sospechosos</button>
+              <button type="button" class="pill pill-emerald" data-filter="CLEAN">Limpios</button>
+            </div>
+
+            <input
+              type="search"
+              id="forensics-search"
+              class="input-control search-input"
+              placeholder="Filtrar por remitente o asunto..."
+              maxlength="120"
+              aria-label="Buscar en bitácora"
+            />
+          </div>
+
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Veredicto</th>
+                  <th>Puntaje</th>
+                  <th>Remitente</th>
+                  <th>Asunto</th>
+                  <th>Fecha (UTC)</th>
+                  <th>Acción</th>
+                </tr>
+              </thead>
+              <tbody id="forensics-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- VISTA 3: ORÁCULO DE URLS (ANALIZADOR MANUAL) -->
+      <section id="view-oracle" class="view-section">
+        <div class="oracle-layout">
+          <form id="oracle-form" class="panel-card oracle-form" novalidate>
+            <div class="panel-header">
+              <div>
+                <h2>Oráculo de Inspección Manual</h2>
+                <p class="panel-desc">
+                  Evalúa cualquier enlace sospechoso contra Capa 1 (Local), Capa 2 (VirusTotal) y Capa 3 (Heurística Aduanera) sin visitarlo jamás.
+                </p>
+              </div>
+            </div>
+
+            <label class="field-label" for="oracle-url">
+              URL Objetivo (Obligatorio)
+            </label>
+            <input
+              type="text"
+              id="oracle-url"
+              class="input-control mono"
+              placeholder="Ej: http://seniat.gob.ve@dhl-aranceles-ve.com:8443/pago"
+              maxlength="2048"
+              required
+            />
+
+            <label class="field-label" for="oracle-subject">
+              Asunto del Correo (Opcional — contexto de ingeniería social)
+            </label>
+            <input
+              type="text"
+              id="oracle-subject"
+              class="input-control"
+              placeholder="Ej: Guía retenida en aduana — pago urgente requerido"
+              maxlength="500"
+            />
+
+            <label class="field-label" for="oracle-body">
+              Fragmento del Cuerpo (Opcional)
+            </label>
+            <textarea
+              id="oracle-body"
+              class="input-control textarea-control"
+              rows="3"
+              placeholder="Pega aquí texto del correo (ej. manifiesto de carga, bill of lading...)"
+              maxlength="5000"
+            ></textarea>
+
+            <div class="form-actions">
+              <button type="submit" id="oracle-submit-btn" class="btn btn-crimson">
+                ⚚ Ejecutar Análisis Forense
+              </button>
+              <button type="button" id="oracle-clear-btn" class="btn btn-ghost">
+                Limpiar
+              </button>
+            </div>
+            <p id="oracle-error" class="form-error" role="alert"></p>
+          </form>
+
+          <div id="oracle-result-card" class="panel-card oracle-result empty-state">
+            <p class="empty-msg">
+              Ingresa una URL en el formulario y ejecuta el análisis para visualizar el desglose de riesgo y la firma neutralizada.
+            </p>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Drawer Lateral de Autopsia de Enlaces de un Correo -->
+  <div id="drawer-backdrop" class="drawer-backdrop" hidden></div>
+  <aside id="autopsy-drawer" class="autopsy-drawer" aria-hidden="true">
+    <div class="drawer-header">
+      <div>
+        <span class="drawer-kicker">AUTOPSIA FORENSE DE MENSAJE</span>
+        <h2 id="drawer-subject" class="drawer-title">Detalle del Correo</h2>
+      </div>
+      <button type="button" id="drawer-close-btn" class="btn btn-ghost" aria-label="Cerrar panel">
+        ✕
+      </button>
+    </div>
+    <div id="drawer-meta" class="drawer-meta"></div>
+    <div id="drawer-urls-list" class="drawer-urls-list"></div>
+  </aside>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

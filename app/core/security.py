@@ -5,7 +5,6 @@ Prevención de Log Injection (CWE-117), Defanging de URLs y cabeceras HTTP segur
 
 import re
 
-# Expresión regular lineal precompilada (libre de backtracking catastrófico) para caracteres de control
 _CONTROL_CHARS_RE = re.compile(r"[\x00-\x1f\x7f]+")
 
 DANGEROUS_SCHEMES: tuple[str, ...] = ("javascript:", "data:", "vbscript:", "file:")
@@ -36,7 +35,6 @@ def defang_url(url: str) -> str:
     """
     Función pura que neutraliza visualmente una URL hostil para que jamás sea clicable
     ni ejecutable por accidente en paneles de auditoría o reportes.
-    Ejemplo: 'https://evil.com/login' -> 'hxxps://evil[.]com/login'
     """
     if not url:
         return ""
@@ -59,14 +57,15 @@ def defang_url(url: str) -> str:
 
 def get_owasp_security_headers() -> tuple[tuple[str, str], ...]:
     """
-    Retorna una tupla inmutable de cabeceras HTTP recomendadas por OWASP ASVS
-    para proteger el Dashboard contra Blind Stored XSS, Clickjacking y MIME Sniffing.
+    Retorna una tupla inmutable de cabeceras HTTP estrictas recomendadas por OWASP ASVS
+    (cero 'unsafe-inline' tanto en scripts como en estilos).
     """
     return (
         (
             "Content-Security-Policy",
-            "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; "
-            "img-src 'self' data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
+            "default-src 'self'; script-src 'self'; style-src 'self'; "
+            "img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; "
+            "base-uri 'self'; form-action 'self'",
         ),
         ("X-Content-Type-Options", "nosniff"),
         ("X-Frame-Options", "DENY"),

@@ -1,15 +1,18 @@
 """
-Punto de entrada funcional de FastAPI (Cero Clases POO).
+Punto de entrada funcional de FastAPI.
 Gestiona el ciclo de vida del monitor IMAP en segundo plano,
-las cabeceras HTTP de seguridad OWASP y el manejo seguro de excepciones.
+las cabeceras HTTP de seguridad OWASP, el frontend SOC y manejo seguro de excepciones.
 """
 
 import asyncio
 from contextlib import asynccontextmanager
 import logging
+from pathlib import Path
 from typing import AsyncIterator, Callable
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 
 from app.api.routes import create_api_router
 from app.core.config import get_config
@@ -20,6 +23,10 @@ from app.services.detection.vt_layer import make_rate_limiter, query_virustotal_
 from app.services.imap_service import poll_inbox_once
 
 logger = logging.getLogger("phishguard.main")
+
+FRONTEND_DIR = Path(__file__).resolve().parent / "frontend"
+TEMPLATES_DIR = FRONTEND_DIR / "templates"
+STATIC_DIR = FRONTEND_DIR / "static"
 
 
 def build_vt_query_fn(config: AppConfig) -> Callable[[str], VtLayerResult] | None:
@@ -62,6 +69,7 @@ def create_app(
     """
     active_config = config or get_config()
     active_vt_fn = vt_query_fn if vt_query_fn is not None else build_vt_query_fn(active_config)
+    templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
@@ -112,6 +120,19 @@ def create_app(
         return JSONResponse(
             status_code=500,
             content={"detail": "Error interno del servidor."},
+        )
+
+    app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+
+    @app.get("/", response_class=HTMLResponse, include_in_schema=False)
+    def serve_dashboard(request: Request) -> HTMLResponse:
+        return templates.TemplateResponse(
+            request=request,
+            name="index.html",
+            context={
+                "project_name": active_config.project_name,
+                "version": active_config.version,
+            },
         )
 
     app.include_router(create_api_router(active_config, vt_query_fn=active_vt_fn))
