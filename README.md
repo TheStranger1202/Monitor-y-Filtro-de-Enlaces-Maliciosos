@@ -102,6 +102,7 @@ La documentación técnica detallada de cada fase del desarrollo se encuentra en
 * `docs/etapa_3_motor_hibrido_imap_feeds.md` — Capa VirusTotal, orquestador, monitor IMAP y feeds.
 * `docs/etapa_4a_api_backend.md` — API REST FastAPI y ciclo de vida.
 * `docs/etapa_4b_frontend.md` — Interfaz SOC y endurecimiento CSP/XSS.
+* `docs/manual_de_usuario.md` — Guía práctica de uso y operación de la Consola SOC.
 
 ---
 
