@@ -1,116 +1,110 @@
-# 🛡️ Sistema de Detección de Enlaces Maliciosos en Plataformas de Correo Institucional
+# PhishGuard-Chacao — Monitor y Filtro de Enlaces Maliciosos (ICES)
 
-Proyecto universitario orientado a la detección preventiva y remediación automatizada de enlaces maliciosos (*phishing*, *malware* y suplantación de identidad) en plataformas de correo institucional de compañías de importación y exportación ubicadas en el municipio Chacao, Miranda, Venezuela.
+Sistema preventivo de **Seguridad Integrada de Correo Electrónico en la Nube (ICES)** diseñado para empresas de importación, exportación y logística aduanera en el municipio Chacao (Caracas, Venezuela).
 
----
-
-## 📋 Descripción del Problema y Solución
-
-Las empresas del sector aduanero y de comercio exterior reciben diariamente un alto volumen de comunicaciones con enlaces externos (tracking de navieras, notificaciones arancelarias, manifiestos de carga y facturación), lo que las convierte en un blanco crítico para ataques de ingeniería social.
-
-Este sistema implementa una arquitectura de **Seguridad de Correo Integrada (ICES — *Integrated Cloud Email Security*)** que opera mediante monitoreo continuo por protocolo **IMAP** y un **motor híbrido de análisis en 3 capas**, aislando automáticamente los correos sospechosos en una carpeta de cuarentena antes de que el usuario interactúe con ellos.
+Monitorea buzones corporativos vía **IMAP TLS**, extrae y normaliza enlaces de correos MIME/HTML, los evalúa mediante un **Motor de Detección Híbrido de 3 Capas** y aísla automáticamente los mensajes maliciosos en una carpeta `Cuarentena`, ofreciendo una consola SOC web para auditoría forense y análisis manual bajo demanda.
 
 ---
 
-## 🏗️ Arquitectura del Sistema
+## Arquitectura y Principios de Ingeniería
 
-El flujo de procesamiento consta de cuatro etapas principales:
-
-1. **Ingesta y Extracción Segura (IMAP + MIME/HTML):**
-   * Conexión segura vía SSL/TLS (`IMAP4_SSL`) a la bandeja de entrada institucional.
-   * Decodificación de estructuras multiparte (MIME) y análisis DOM del HTML para extraer tanto los atributos `href` reales como los textos visibles de cada enlace.
-2. **Motor de Detección Híbrido (3 Capas):**
-   * **Capa 1 — Caché Local y Listas de Control (SQLite):** Consulta instantánea contra una lista blanca de dominios legítimos verificados y una base de datos local alimentada por *feeds* públicos de inteligencia de amenazas (URLhaus / OpenPhish).
-   * **Capa 2 — Inteligencia de Amenazas Externa (VirusTotal API v3):** Evaluación reputacional mediante consulta a múltiples motores antivirus con gestión de límite de tasa (*rate limiting*).
-   * **Capa 3 — Heurística Contextual (Sector Importación/Exportación):** Sistema de puntuación ponderada (*scoring*) que evalúa palabras clave del rubro aduanero, detección de *typosquatting* sobre navieras/couriers, uso de direcciones IP directas, acortadores de URL y discrepancias entre enlace visible y destino real.
-3. **Remediación Automatizada:**
-   * Los correos que superan el umbral de riesgo son trasladados automáticamente a la carpeta `Cuarentena` del buzón y registrados en la base de datos para auditoría.
-4. **Panel de Control Web (Dashboard):**
-   * Interfaz web desarrollada en **FastAPI** para visualizar métricas en tiempo real, auditar incidentes bloqueados y analizar URLs de forma manual.
+* **Paradigma 100% Funcional (*Functional Core, Imperative Shell*):** Cero clases POO en Python y JavaScript (auditado automáticamente mediante el árbol de sintaxis abstracta `ast` en la suite de pruebas). Estructuras de datos inmutables (`namedtuple`, `frozenset`, `tuple`) y protección de secretos mediante clausuras léxicas (*closures*) que impiden fugas en logs o *tracebacks*.
+* **Seguridad por Diseño (OWASP Top 10 / ASVS / STRIDE):**
+  * **Anti-SSRF:** El sistema jamás visita ni resuelve HTTP hacia URLs sospechosas; consulta reputación externa mediante el identificador Base64 URL-safe en VirusTotal v3.
+  * **Anti-XSS (*Blind Stored XSS*):** Interfaz SOC con `Content-Security-Policy` estricto (`script-src 'self'`, `style-src 'self'`, cero `unsafe-inline`) y construcción DOM pura sin `innerHTML`. Todas las URLs se neutralizan visualmente (*defanging*: `hxxps://...[.]...`).
+  * **Anti-SQLi y Concurrencia:** `sqlite3` nativo en modo `WAL` con claves foráneas activas y consultas 100% parametrizadas.
+  * **Anti-ReDoS, Anti-IMAP Injection y Anti-Log Injection:** Expresiones regulares lineales, validación estricta de UIDs/carpetas IMAP, límites de tamaño MIME/URL y sanitización CRLF.
 
 ---
 
-## 📁 Estructura del Proyecto
+## Motor de Detección Híbrido (3 Capas)
+
+1. **Capa 1 — Control Local (SQLite WAL):** Validación estricta de sufijos contra Lista Blanca corporativa (navieras, couriers y entes aduaneros) y Lista Negra local sincronizada desde **OpenPhish** (con soporte dual automático para feeds CSV tipo URLhaus).
+2. **Capa 2 — Inteligencia Externa (VirusTotal API v3):** Consulta reputacional con *rate limiter* funcional integrado y degradación elegante ante límites `429`, *timeouts* o ausencia de API Key.
+3. **Capa 3 — Heurística Aduanera:** Detección de homógrafos IDN/Punycode (`xn--`), *typosquatting* y *brand-impersonation* (distancia de Levenshtein vía `rapidfuzz`) contra navieras y entes (`maersk.com`, `dhl.com`, `seniat.gob.ve`, `bolipuertos.gob.ve`), credenciales embebidas (`user@host`), IPs directas/privadas, puertos no estándar, discrepancia `href` vs texto visible y señuelos de ingeniería social aduanera.
+
+---
+
+## Estructura del Repositorio
 
 ```text
 phishguard-chacao/
-├── .env.example              # Plantilla de variables de entorno
-├── .gitignore                # Exclusiones de control de versiones
-├── LICENSE                   # Licencia MIT
-├── README.md                 # Documentación principal
-├── requirements.txt          # Dependencias del proyecto
-├── docs/                     # Documentación académica y técnica
-│   ├── arquitectura.md       # Diseño detallado y matriz de riesgo
-│   └── estandar_commits.md   # Convención de commits del repositorio
-├── app/                      # Código fuente principal
-│   ├── main.py               # Punto de entrada FastAPI y ciclo de vida IMAP
-│   ├── core/                 # Configuración global y variables de entorno
-│   ├── db/                   # Modelos de datos y conexión SQLite
-│   ├── services/             # Monitor IMAP, extractor HTML y motor de 3 capas
-│   ├── api/                  # Endpoints REST del Dashboard
-│   └── frontend/             # Plantillas HTML y hojas de estilo CSS
-├── scripts/                  # Utilidades de actualización de feeds y pruebas
-└── tests/                    # Pruebas unitarias y de integración
+├── app/
+│   ├── api/routes.py                  # Endpoints REST (/api/v1/*)
+│   ├── core/
+│   │   ├── config.py                  # Carga funcional e inmutable de configuración
+│   │   ├── security.py                # Sanitización de logs, defanging y cabeceras OWASP
+│   │   └── types.py                   # Registros inmutables (namedtuple) y clausuras
+│   ├── db/database.py                 # Persistencia funcional SQLite WAL parametrizada
+│   ├── frontend/
+│   │   ├── templates/index.html       # Consola SOC (Panel de Mando, Bitácora, Oráculo)
+│   │   └── static/{styles.css,app.js} # Estilos y controlador funcional anti-XSS
+│   ├── services/
+│   │   ├── detection/
+│   │   │   ├── local_layer.py         # Capa 1: Lista Blanca y Lista Negra local
+│   │   │   ├── vt_layer.py            # Capa 2: VirusTotal v3 + Rate Limiter
+│   │   │   ├── heuristic_layer.py     # Capa 3: Heurística aduanera y homógrafos
+│   │   │   └── engine.py              # Orquestador híbrido con cortocircuitos
+│   │   ├── imap_service.py            # Monitor IMAP TLS y acción de Cuarentena
+│   │   └── parser_service.py          # Extractor MIME/HTML seguro anti-ReDoS
+│   └── main.py                        # Punto de entrada FastAPI y ciclo de vida
+├── docs/                              # Documentación técnica por etapa y trazabilidad
+├── scripts/update_feeds.py            # Sincronizador seguro de feeds (OpenPhish / CSV)
+├── tests/                             # Suite automatizada pytest (23 pruebas)
+├── .env.example                       # Plantilla de variables de entorno
+├── pytest.ini                         # Configuración de entorno de pruebas
+└── requirements.txt                   # Dependencias del proyecto
 ```
 
 ---
 
-## ⚙️ Requisitos Previos
+## Instalación y Uso Rápido
 
-* **Sistema Operativo:** Debian 13 (o distribución Linux compatible).
-* **Lenguaje:** Python 3.11 o superior.
-* **Cuenta de Correo:** Buzón con acceso IMAP habilitado (ej. Gmail con *Contraseña de Aplicación* o servidor institucional).
-* **API Externa:** Clave de API gratuita de [VirusTotal](https://www.virustotal.com/).
+### 1. Clonar y preparar el entorno virtual (Python 3.13+)
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
 
----
+### 2. Configurar variables de entorno
+```bash
+cp .env.example .env
+chmod 600 .env
+```
+Edita `.env` con:
+* `VIRUSTOTAL_API_KEY`: Tu clave gratuita de VirusTotal v3 (opcional; si se omite, el sistema opera con las Capas 1 y 3).
+* `EMAIL_USER` y `EMAIL_PASSWORD`: Cuenta IMAP y su **Contraseña de Aplicación** (si se dejan vacíos, el servidor inicia solo en modo Dashboard + Oráculo manual sin encender el demonio IMAP).
 
-## 🚀 Instalación y Configuración
+### 3. Sincronizar indicadores de amenazas (OpenPhish)
+```bash
+python3 -m scripts.update_feeds
+```
 
-1. **Clonar el repositorio:**
-   ```bash
-   git clone https://github.com/TU_USUARIO/phishguard-chacao.git
-   cd phishguard-chacao
-   ```
-
-2. **Crear y activar el entorno virtual:**
-   ```bash
-   python3 -m venv .venv
-   source .venv/bin/activate
-   ```
-
-3. **Instalar dependencias:**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. **Configurar variables de entorno:**
-   ```bash
-   cp .env.example .env
-   ```
-   Edita el archivo `.env` con tus credenciales IMAP y tu clave de VirusTotal.
-
-5. **Actualizar la base de datos local de amenazas:**
-   ```bash
-   python scripts/update_feeds.py
-   ```
+### 4. Ejecutar el servidor y abrir la Consola SOC
+```bash
+uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
+Accede a **`http://127.0.0.1:8000`** para utilizar el **Panel de Mando**, la **Bitácora Forense** y el **Oráculo de URLs**.
 
 ---
 
-## 🧪 Flujo de Demostración (Entorno de Pruebas)
+## Pruebas Automatizadas y Documentación
 
-Para validar el funcionamiento del sistema de forma segura:
-1. Iniciar el servidor web y el servicio de monitoreo IMAP.
-2. Enviar un correo de prueba hacia la cuenta monitoreada conteniendo enlaces de prueba controlados o patrones de *phishing* aduanero.
-3. Verificar el traslado automático del mensaje hacia la carpeta `Cuarentena` y la generación de la alerta correspondiente en el Dashboard.
+Ejecuta la suite completa de seguridad, auditoría AST (cero clases POO) y casos borde (23 pruebas):
+```bash
+pytest -v
+```
+
+La documentación técnica detallada de cada fase del desarrollo se encuentra en [`docs/`](docs/):
+* `docs/etapa_1_nucleo_y_persistencia.md` — Configuración funcional, seguridad OWASP y SQLite WAL.
+* `docs/etapa_2_parser_y_capas_puras.md` — Extractor MIME/HTML y Capas 1 y 3.
+* `docs/etapa_3_motor_hibrido_imap_feeds.md` — Capa VirusTotal, orquestador, monitor IMAP y feeds.
+* `docs/etapa_4a_api_backend.md` — API REST FastAPI y ciclo de vida.
+* `docs/etapa_4b_frontend.md` — Interfaz SOC y endurecimiento CSP/XSS.
 
 ---
 
-## 🤝 Estándar de Desarrollo
+## Licencia
 
-Este repositorio sigue la especificación **Conventional Commits** documentada en `docs/estandar_commits.md` para garantizar la trazabilidad del código.
-
----
-
-## 📄 Licencia
-
-Este proyecto está distribuido bajo la **Licencia MIT**. Consulta el archivo `LICENSE` para más detalles.
+Distribuido bajo licencia MIT. Libre para uso, auditoría y mejora por la comunidad.

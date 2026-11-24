@@ -22,7 +22,7 @@ Este documento respalda la implementación de la interfaz web del sistema bajo l
 2. **Confort Visual (Dark Mode Calibrado):**
    * Base en tono pizarra abisal (`#0b0d12`) y superficies elevadas (`#121620`) con contraste WCAG AA+ (`#e2e8f0`) para evitar deslumbramiento y fatiga ocular, acentuado con carmesí táctico (`#e11d48`), esmeralda terminal (`#10b981`) y violeta arcano (`#8b5cf6`).
 3. **Identidad Open-Source:**
-   * Sigilo vectorial SVG propio y identidad visual del proyecto integrados en la interfaz para distribución pública bajo licencia MIT.
+   * Sigilo vectorial SVG propio e identidad visual del proyecto integrados en la interfaz para distribución pública bajo licencia MIT.
 
 ---
 

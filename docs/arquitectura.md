@@ -66,9 +66,9 @@ Reglas determinísticas diseñadas específicamente para el contexto operativo d
 
 | Regla Heurística | Condición Técnica | Puntos | Justificación en el Sector |
 | :--- | :--- | :---: | :--- |
-| **H1: Suplantación de Marca (*Typosquatting*)** | Distancia de Levenshtein $d \in \{1, 2\}$ respecto a dominios legítimos de navieras, couriers y entes aduaneros (`maersk.com`, `msc.com`, `dhl.com`, `fedex.com`, `seniat.gob.ve`, `bolipuertos.gob.ve`). | **+50** | Ataques dirigidos imitando portales de rastreo (*tracking*) o pago de aranceles. |
-| **H2: Discrepancia de Hipervínculo** | El texto visible del enlace aparenta ser una URL (`https://...`), pero el dominio en el atributo `href` difiere del dominio visible. | **+45** | Técnica clásica de ocultamiento de destino en notificaciones de facturación. |
-| **H3: Dirección IP Directa** | El host de la URL es una dirección IPv4/IPv6 literal en lugar de un nombre de dominio registrado (ej. `http://192.168.1.50/factura`). | **+40** | Infraestructura efímera o servidores comprometidos sin reputación DNS. |
+| **H1: Suplantación de Marca (*Typosquatting*)** | Distancia de Levenshtein $d \in \{1, 2\}$ respecto a dominios legítimos de navieras, couriers y entes aduaneros (`maersk.com`, `msc.com`, `dhl.com`, `fedex.com`, `seniat.gob.ve`, `bolipuertos.gob.ve`). | **+55** | Ataques dirigidos imitando portales de rastreo (*tracking*) o pago de aranceles. |
+| **H2: Discrepancia de Hipervínculo** | El texto visible del enlace aparenta ser una URL (`https://...`), pero el dominio en el atributo `href` difiere del dominio visible. | **+50** | Técnica clásica de ocultamiento de destino en notificaciones de facturación. |
+| **H3: Dirección IP Directa** | El host de la URL es una dirección IPv4/IPv6 literal en lugar de un nombre de dominio registrado (ej. `http://192.168.1.50/factura`). | **+45** | Infraestructura efímera o servidores comprometidos sin reputación DNS. |
 | **H4: Uso de Acortadores de URL** | El dominio pertenece a servicios de redirección (`bit.ly`, `tinyurl.com`, `t.co`, `cutt.ly`, `is.gd`). | **+20** | Ocultamiento del destino real en notificaciones rápidas de despacho. |
 | **H5: Ingeniería Social Aduanera** | Presencia de términos críticos de urgencia logística en el asunto o cuerpo (*"guía retenida"*, *"manifiesto de carga"*, *"BL pendiente"*, *"pago de arancel"*, *"liberación de contenedor"*, *"swift"*). | **+15** | Contextualiza el riesgo cuando se combina con anomalías estructurales. |
 
@@ -76,7 +76,7 @@ Reglas determinísticas diseñadas específicamente para el contexto operativo d
 
 ## 4. Modelo de Datos (SQLite)
 
-El almacenamiento persistente se gestiona mediante cuatro entidades principales en `app/db/models.py`:
+El almacenamiento persistente se gestiona mediante cuatro entidades principales en `app/db/database.py` (SQLite WAL nativo sin ORM):
 
 ```mermaid
 erDiagram

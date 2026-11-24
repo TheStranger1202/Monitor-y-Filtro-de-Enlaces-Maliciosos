@@ -28,7 +28,7 @@ flowchart LR
 
     subgraph Zona_Terceros [Servicios Externos]
         VT[API VirusTotal v3]
-        UH[Feed URLhaus HTTPS]
+        UH[Feed OpenPhish / CSV HTTPS]
     end
 
     subgraph Zona_Controlada [Host Local Debian 13 - Entorno Seguro]
@@ -63,9 +63,9 @@ flowchart LR
 | Categoría STRIDE | Amenaza Identificada | Referencia OWASP / CWE | Mitigación Arquitectónica Obligatoria |
 | :--- | :--- | :--- | :--- |
 | **S — Spoofing** (Suplantación) | Ataques homográficos IDN usando alfabetos cirílicos/griegos (ej. `mаersk.com`) o falsificación de cabeceras `From` para simular dominios en lista blanca (`maersk.com.evil.ru`). | OWASP A07 / CWE-290 | Conversión obligatoria a **Punycode (`idna`)**; extracción estricta del host real; comparación de lista blanca únicamente por coincidencia exacta o subdominio jerárquico precedido por punto (`.dominio.com`). |
-| **T — Tampering** (Manipulación) | **SQL Injection** a través de URLs/asuntos maliciosos o **IMAP Command Injection** mediante caracteres CRLF (`\r\n`) en UIDs o nombres de carpetas. | OWASP A03 / CWE-89 / CWE-93 | Consultas 100% parametrizadas mediante ORM `SQLModel`; validación numérica estricta (`isdigit()`) para UIDs IMAP; prohibición de interpolación directa de cadenas. |
+| **T — Tampering** (Manipulación) | **SQL Injection** a través de URLs/asuntos maliciosos o **IMAP Command Injection** mediante caracteres CRLF (`\r\n`) en UIDs o nombres de carpetas. | OWASP A03 / CWE-89 / CWE-93 | Consultas 100% parametrizadas sobre `sqlite3` nativo; validación numérica estricta (`isdigit()`) para UIDs IMAP; prohibición de interpolación directa de cadenas. |
 | **R — Repudiation** (Repudio) | **Log Injection (CRLF)** donde un atacante incluye saltos de línea falsos en el asunto de un correo para adulterar los registros de auditoría del sistema. | OWASP A09 / CWE-117 | Función transversal de sanitización de logs que elimina `\r`, `\n` y caracteres de control antes de escribir cualquier evento; marcas de tiempo inmutables en UTC. |
-| **I — Information Disclosure** (Fuga de Datos) | Exposición de `EMAIL_PASSWORD` o `VIRUSTOTAL_API_KEY` en trazas de error (*tracebacks*) o logs; o **SSRF** induciendo al servidor a hacer peticiones HTTP hacia redes internas (`127.0.0.1`, `192.168.x.x`). | OWASP A05 / A10 (SSRF) / CWE-200 / CWE-918 | Uso de `SecretStr` en Pydantic para enmascarar secretos; manejadores globales de errores sin *stack traces* al cliente; **política de Cero Navegación Activa**: el motor jamás realiza peticiones HTTP hacia las URLs extraídas. |
+| **I — Information Disclosure** (Fuga de Datos) | Exposición de `EMAIL_PASSWORD` o `VIRUSTOTAL_API_KEY` en trazas de error (*tracebacks*) o logs; o **SSRF** induciendo al servidor a hacer peticiones HTTP hacia redes internas (`127.0.0.1`, `192.168.x.x`). | OWASP A05 / A10 (SSRF) / CWE-200 / CWE-918 | Uso de clausuras léxicas (`make_secret`) para enmascarar secretos; manejadores globales de errores sin *stack traces* al cliente; **política de Cero Navegación Activa**: el motor jamás realiza peticiones HTTP hacia las URLs extraídas. |
 | **D — Denial of Service** (Denegación de Servicio) | **ReDoS** por expresiones regulares con *backtracking* exponencial; correos gigantescos (*MIME Bombs*); o correos con decenas de enlaces para agotar las $4\text{ req/min}$ de VirusTotal. | OWASP API4 / CWE-1333 / CWE-400 | Tope de lectura por mensaje ($2\text{ MB}$ máx. de cuerpo analizable), longitud máxima de URL ($2048\text{ caracteres}$), deduplicación previa de enlaces, tope de consultas externas por correo y *timeouts* estrictos en sockets. |
 | **E — Elevation of Privilege / XSS** | **Blind Stored XSS**: Inyección de `<script>` o esquemas `javascript:alert(1)` en asuntos o enlaces para comprometer el navegador del administrador en el Dashboard. | OWASP A03 (XSS) / CWE-79 / ASVS V5 | Auto-escapado HTML forzoso en `Jinja2`; cabeceras `Content-Security-Policy` (CSP) restrictivas; prohibición de renderizar URLs sospechosas como hipervínculos clicables activos (*URL defanging* o texto plano). |
 
